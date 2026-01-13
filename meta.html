@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARBOREAL - Relatório Semanal de Vendas</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #f9fafb;
+            line-height: 1.5;
+        }
+
+        .no-print {
+            display: block;
+        }
+
+        header {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            color: white;
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            color: #d1fae5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .controls {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .week-input {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .week-input label {
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .week-input input {
+            width: 80px;
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+
+        .export-btn {
+            background-color: #3b82f6;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .export-btn:hover {
+            background-color: #2563eb;
+        }
+
+        .reload-btn {
+            background-color: #059669;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .reload-btn:hover {
+            background-color: #047857;
+        }
+
+        .report-card {
+            background: white;
+            padding: 3rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .report-header {
+            text-align: center;
+            border-bottom: 3px solid #059669;
+            padding-bottom: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .report-header .logo {
+            max-width: 200px;
+            height: auto;
+            margin-bottom: 1rem;
+        }
+
+        .report-header h1 {
+            font-size: 3rem;
+            color: #059669;
+            margin-bottom: 0.5rem;
+        }
+
+        .report-header h2 {
+            font-size: 1.75rem;
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+        }
+
+        .report-header p {
+            font-size: 1.125rem;
+            color: #6b7280;
+        }
+
+        .chart-container {
+            margin: 2rem 0;
+            min-height: 400px;
+        }
+
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 2rem 0;
+        }
+
+        .summary-table th,
+        .summary-table td {
+            padding: 1rem;
+            text-align: left;
+            border: 1px solid #e5e7eb;
+        }
+
+        .summary-table th {
+            background-color: #f3f4f6;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .summary-table tbody tr:hover {
+            background-color: #f9fafb;
+        }
+
+        .summary-table .position {
+            text-align: center;
+            font-weight: 600;
+            color: #059669;
+        }
+
+        .summary-table .value {
+            text-align: right;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.375rem 0.75rem;
+            border-radius: 999px;
+            color: white;
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .status-excellent { background-color: #10b981; }
+        .status-good { background-color: #3b82f6; }
+        .status-average { background-color: #f59e0b; }
+        .status-low { background-color: #ef4444; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .stat-card {
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-card.blue { background-color: #eff6ff; }
+        .stat-card.green { background-color: #f0fdf4; }
+        .stat-card.purple { background-color: #faf5ff; }
+
+        .stat-card p:first-child {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card p:last-child {
+            font-size: 1.875rem;
+            font-weight: 700;
+        }
+
+        .stat-card.blue p:last-child { color: #1d4ed8; }
+        .stat-card.green p:last-child { color: #059669; }
+        .stat-card.purple p:last-child { color: #7c3aed; }
+
+        .report-footer {
+            text-align: center;
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid #e5e7eb;
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+
+        .loading-message {
+            background-color: #dbeafe;
+            border-left: 4px solid #3b82f6;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 4px;
+            color: #1e40af;
+        }
+
+        .error-message {
+            background-color: #fee2e2;
+            border-left: 4px solid #ef4444;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 4px;
+            color: #991b1b;
+        }
+
+        .success-message {
+            background-color: #d1fae5;
+            border-left: 4px solid #10b981;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 4px;
+            color: #065f46;
+        }
+
+        .info-box {
+            background-color: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            border-radius: 4px;
+        }
+
+        .info-box strong {
+            color: #92400e;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .info-box code {
+            background-color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #1f2937;
+            display: block;
+            margin: 0.5rem 0;
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .report-card {
+                box-shadow: none;
+                padding: 1rem;
+            }
+            @page {
+                margin: 1cm;
+            }
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.5rem;
+            }
+            .report-header h1 {
+                font-size: 2rem;
+            }
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .summary-table {
+                font-size: 0.875rem;
+            }
+            .summary-table th,
+            .summary-table td {
+                padding: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="no-print">
+        <div class="container">
+            <h1>ARBOREAL - Gestão de Vendas</h1>
+            <p>Sistema de acompanhamento de metas semanais</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Informações sobre o arquivo -->
+        
+        <div id="messageArea" class="no-print"></div>
+
+        <!-- Controles -->
+        <div class="controls no-print">
+            <div class="week-input">
+                <label for="weekNumber">Semana:</label>
+                <input type="number" id="weekNumber" min="1" max="52" value="1">
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+                <button class="reload-btn" onclick="loadData()">
+                    <span>🔄</span> Recarregar Dados
+                </button>
+                <button class="export-btn" onclick="window.print()">
+                    <span>🖨️</span> Exportar / Imprimir
+                </button>
+            </div>
+        </div>
+
+        <!-- Relatório -->
+        <div class="report-card">
+            <div class="report-header">
+                <!-- LOGO: Substitua pelo caminho da sua logo -->
+                <img src="C:\Users\conta\Downloads\logo.jpg alt="Logo ARBOREAL" class="logo">
+                
+                <h2>Relatório Semanal de Vendas</h2>
+                <p id="reportDate">Semana 1 - <span id="currentDate"></span></p>
+            </div>
+
+            <div id="loadingState" style="text-align: center; padding: 4rem; color: #6b7280;">
+                <p style="font-size: 1.5rem;">⏳ Carregando dados...</p>
+            </div>
+
+            <div id="reportContent" style="display: none;">
+                <!-- Gráfico -->
+                <div class="chart-container">
+                    <canvas id="salesChart"></canvas>
+                </div>
+
+                <!-- Tabela de Resumo -->
+                <h3 style="font-size: 1.5rem; margin-top: 2rem; margin-bottom: 1rem; color: #1f2937;">
+                    Detalhes por Vendedor
+                </h3>
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">Posição</th>
+                            <th>Vendedor</th>
+                            <th class="value">Vendido</th>
+                            <th class="value">Meta</th>
+                            <th class="value">Restante</th>
+                            <th class="value">% da Meta</th>
+                            <th style="text-align: center; width: 120px;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                    </tbody>
+                </table>
+
+                <!-- Cards de Resumo -->
+                <div class="stats-grid">
+                    <div class="stat-card blue">
+                        <p>Total Vendido</p>
+                        <p id="totalSold">R$ 0,00</p>
+                    </div>
+                    <div class="stat-card green">
+                        <p>Meta Total</p>
+                        <p id="totalGoal">R$ 0,00</p>
+                    </div>
+                    <div class="stat-card purple">
+                        <p>% Geral da Meta</p>
+                        <p id="totalPercentage">0%</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="report-footer">
+                <p>Relatório gerado automaticamente • ARBOREAL © 2026</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // CONFIGURAÇÃO: Nome do arquivo CSV fixo
+        // ==========================================
+        const CSV_FILE_PATH = 'metas';
+
+        let chartInstance = null;
+        let sellersData = [];
+
+        // Configurar data atual
+        const dateElement = document.getElementById('currentDate');
+        const today = new Date();
+        dateElement.textContent = today.toLocaleDateString('pt-BR', {
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric'
+        });
+
+        // Atualizar semana
+        document.getElementById('weekNumber').addEventListener('change', function() {
+            const weekNum = this.value;
+            document.getElementById('reportDate').innerHTML = 
+                `Semana ${weekNum} - <span id="currentDate">${dateElement.textContent}</span>`;
+        });
+
+        function showMessage(message, type = 'success') {
+            const messageArea = document.getElementById('messageArea');
+            let className = 'success-message';
+            if (type === 'error') className = 'error-message';
+            if (type === 'loading') className = 'loading-message';
+            
+            messageArea.innerHTML = `<div class="${className}">${message}</div>`;
+            
+            if (type !== 'loading') {
+                setTimeout(() => {
+                    messageArea.innerHTML = '';
+                }, 5000);
+            }
+        }
+
+        function loadData() {
+            showMessage('⏳ Carregando dados do arquivo...', 'loading');
+            
+            // Tentar carregar o arquivo CSV
+            fetch(CSV_FILE_PATH)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Arquivo não encontrado');
+                    }
+                    return response.text();
+                })
+                .then(csv => {
+                    sellersData = parseCSV(csv);
+                    
+                    if (sellersData.length === 0) {
+                        throw new Error('Nenhum dado válido encontrado no CSV');
+                    }
+
+                    showMessage(`✅ ${sellersData.length} vendedores carregados com sucesso!`);
+                    renderReport();
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar CSV:', error);
+                    showMessage(`⚠️ Não foi possível carregar o arquivo "${CSV_FILE_PATH}". Usando dados de exemplo.`, 'error');
+                    
+                    // Usar dados de exemplo se o arquivo não for encontrado
+                    loadExampleData();
+                });
+        }
+
+        function loadExampleData() {
+            // Dados de exemplo embutidos
+            const exampleCSV = `Nome,Vendido,Meta
+João Silva,15000,20000
+Maria Santos,22000,20000
+Carlos Oliveira,12000,20000
+Ana Paula,18500,20000
+Pedro Costa,25000,20000
+Juliana Alves,9500,20000`;
+
+            sellersData = parseCSV(exampleCSV);
+            renderReport();
+        }
+
+        function parseCSV(csv) {
+            const lines = csv.split('\n').filter(line => line.trim());
+            const sellers = [];
+
+            // Detectar separador (vírgula ou ponto e vírgula)
+            const separator = csv.includes(';') ? ';' : ',';
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+
+                // Pular cabeçalho se existir
+                if (i === 0 && (line.toLowerCase().includes('nome') || line.toLowerCase().includes('vendedor'))) {
+                    continue;
+                }
+
+                const columns = line.split(separator).map(col => col.trim());
+                
+                if (columns.length >= 3) {
+                    const name = columns[0].replace(/['"]/g, '');
+                    const sold = parseFloat(columns[1].replace(/[^\d.-]/g, ''));
+                    const goal = parseFloat(columns[2].replace(/[^\d.-]/g, ''));
+
+                    if (name && !isNaN(sold) && !isNaN(goal)) {
+                        sellers.push({ name, sold, goal });
+                    }
+                }
+            }
+
+            return sellers;
+        }
+
+        function renderReport() {
+            if (sellersData.length === 0) return;
+
+            // Mostrar conteúdo do relatório
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('reportContent').style.display = 'block';
+
+            // Ordenar vendedores por porcentagem (descendente)
+            const sortedSellers = [...sellersData].sort((a, b) => {
+                const percentA = (a.sold / a.goal) * 100;
+                const percentB = (b.sold / b.goal) * 100;
+                return percentB - percentA;
+            });
+
+            // Renderizar gráfico
+            renderChart(sortedSellers);
+
+            // Renderizar tabela
+            renderTable(sortedSellers);
+
+            // Renderizar estatísticas
+            renderStats(sortedSellers);
+        }
+
+        function getStatusColor(percentage) {
+            if (percentage >= 100) return '#10b981'; // Verde
+            if (percentage >= 75) return '#3b82f6';  // Azul
+            if (percentage >= 50) return '#f59e0b';  // Amarelo
+            return '#ef4444'; // Vermelho
+        }
+
+        function getStatusText(percentage) {
+            if (percentage >= 100) return 'Atingiu!';
+            if (percentage >= 75) return 'Próximo';
+            if (percentage >= 50) return 'Médio';
+            return 'Abaixo';
+        }
+
+        function getStatusClass(percentage) {
+            if (percentage >= 100) return 'status-excellent';
+            if (percentage >= 75) return 'status-good';
+            if (percentage >= 50) return 'status-average';
+            return 'status-low';
+        }
+
+        function renderChart(sellers) {
+            const ctx = document.getElementById('salesChart');
+            
+            // Destruir gráfico anterior se existir
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            const labels = sellers.map(s => s.name);
+            const soldData = sellers.map(s => s.sold);
+            const goalData = sellers.map(s => s.goal);
+            const colors = sellers.map(s => getStatusColor((s.sold / s.goal) * 100));
+
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Vendido',
+                            data: soldData,
+                            backgroundColor: colors,
+                            borderRadius: 6,
+                            borderSkipped: false,
+                        },
+                        {
+                            label: 'Meta',
+                            data: goalData,
+                            backgroundColor: '#e5e7eb',
+                            borderRadius: 6,
+                            borderSkipped: false,
+                        }
+                    ]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.dataset.label || '';
+                                    const value = context.parsed.x;
+                                    return `${label}: R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return 'R$ ' + value.toLocaleString('pt-BR');
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderTable(sellers) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            sellers.forEach((seller, index) => {
+                const percentage = (seller.sold / seller.goal) * 100;
+                const remaining = Math.max(0, seller.goal - seller.sold);
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="position">${index + 1}º</td>
+                    <td>${seller.name}</td>
+                    <td class="value">R$ ${seller.sold.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                    <td class="value">R$ ${seller.goal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                    <td class="value">R$ ${remaining.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                    <td class="value" style="font-weight: 600;">${percentage.toFixed(1)}%</td>
+                    <td style="text-align: center;">
+                        <span class="status-badge ${getStatusClass(percentage)}">
+                            ${getStatusText(percentage)}
+                        </span>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function renderStats(sellers) {
+            const totalSold = sellers.reduce((sum, s) => sum + s.sold, 0);
+            const totalGoal = sellers.reduce((sum, s) => sum + s.goal, 0);
+            const totalPercentage = (totalSold / totalGoal) * 100;
+
+            document.getElementById('totalSold').textContent = 
+                'R$ ' + totalSold.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+            document.getElementById('totalGoal').textContent = 
+                'R$ ' + totalGoal.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+            document.getElementById('totalPercentage').textContent = 
+                totalPercentage.toFixed(1) + '%';
+        }
+
+        // Carregar dados automaticamente ao abrir a página
+        window.addEventListener('load', function() {
+            loadData();
+        });
+    </script>
+</body>
+</html>
